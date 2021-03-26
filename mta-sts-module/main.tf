@@ -135,7 +135,6 @@ resource "aws_api_gateway_integration_response" "integrationresponse" {
 #set($context.responseOverride.header.Content-Type='text/plain')
 ${local.policy}
 EOF
-
   }
 
   depends_on = [aws_api_gateway_integration.integration]
