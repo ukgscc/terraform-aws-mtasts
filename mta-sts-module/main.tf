@@ -133,7 +133,7 @@ resource "aws_api_gateway_integration_response" "integrationresponse" {
   response_templates = {
     "text/plain" = <<EOF
 #set($context.responseOverride.header.Content-Type='text/plain')
-${local.policy}
+${trimspace(local.policy)}
 EOF
   }
 

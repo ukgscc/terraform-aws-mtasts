@@ -34,15 +34,16 @@ $${tls-rpt-delegation}
 $${mta-sts-ns-delegation}
 
 MTA-STS Policy:
+--
 $${policy}
-
+--
 $${mta-sts}
 
 $${tls-rpt}
   EOF
   vars = {
     domain = var.domain
-    policy = local.policy
+    policy = trimspace(local.policy)
     mta-sts = "${local.mta-sts-cname-record} record value:\n${local.mta-sts-record-value}"
     tls-rpt = length(var.reporting_email) > 0 ? "${local.tls-rpt-cname-record} record value:\n${local.tls-rpt-record-value}" : ""
     mta-sts-delegation = "${local.mta-sts-cname-record} CNAME ${join("",data.dns_cname_record_set._mta-sts.*.cname)}"
