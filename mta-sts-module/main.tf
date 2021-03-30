@@ -1,14 +1,14 @@
 locals {
-  useExistingDomain = length(var.zone_id)==0
-  useSubdomain = length(var.zone_id) >0
+  useExistingDomain = length(var.zone_id)>0
+  createSubdomain = length(var.zone_id) ==0
   policydomain = "mta-sts.${var.domain}"
   mta-sts-cname-record = "_mta-sts.${var.domain}"
   tls-rpt-cname-record = "_smtp._tls.${var.domain}"
-  mta-sts-record = local.useSubdomain ? "_mta-sts.mta-sts.${var.domain}" : "_mta-sts.${var.domain}"
-  tls-rpt-record = local.useSubdomain ? "_smtp._tls.mta-sts.${var.domain}" : "_smtp._tls.mta-sts.${var.domain}"
+  mta-sts-record = local.createSubdomain ? "_mta-sts.mta-sts.${var.domain}" : "_mta-sts.${var.domain}"
+  tls-rpt-record = local.createSubdomain ? "_smtp._tls.mta-sts.${var.domain}" : "_smtp._tls.${var.domain}"
   mta-sts-record-value = "v=STSv1; id=${local.policyhash}"
   tls-rpt-record-value = "v=TLSRPTv1;rua=mailto:${var.reporting_email}"
-  route53_zone_id = element(concat(data.aws_route53_zone.zone.*.id,aws_route53_zone.mta-sts-zone.*.id,data.aws_route53_zone.zone.*.id),0)
+  route53_zone_id = coalescelist(data.aws_route53_zone.zone.*.id,aws_route53_zone.mta-sts-zone.*.id)[0]
   mxlist = coalescelist(var.mx,flatten(data.dns_mx_record_set.mx[*].mx[*].exchange))
   policy =  <<EOF
 version: STSv1
@@ -31,18 +31,13 @@ resource "aws_acm_certificate" "cert" {
 
 
 data "aws_route53_zone" "zone" {
-   count = local.useSubdomain ? 1:0
+   count = local.useExistingDomain ? 1:0
   zone_id = var.zone_id
 }
 
 
 resource "aws_route53_zone" "mta-sts-zone" {
-  count = length(var.zone_id) == 0 && var.create-subdomain ? 1:0
-  name = local.policydomain
-}
-
-data "aws_route53_zone" "mta-sts-zone" {
-  count = length(var.zone_id) >0  && !var.create-subdomain ? 1:0
+  count = local.createSubdomain ? 1:0
   name = local.policydomain
 }
 
@@ -159,7 +154,7 @@ resource "aws_api_gateway_deployment" "deployment" {
 }
 
 resource "aws_api_gateway_domain_name" "domain" {
-  count = local.useSubdomain || var.delegated ? 1:0
+  count = local.useExistingDomain || var.delegated ? 1:0
   domain_name              = local.policydomain
   regional_certificate_arn = join("",aws_acm_certificate_validation.cert.*.certificate_arn)
 
@@ -169,14 +164,14 @@ resource "aws_api_gateway_domain_name" "domain" {
 }
 
 resource "aws_api_gateway_base_path_mapping" "basepathmapping" {
-  count = length(var.zone_id) > 0 || var.delegated ? 1:0
+  count = local.useExistingDomain || var.delegated ? 1:0
   api_id      = aws_api_gateway_rest_api.mtastspolicyapi.id
   stage_name  = aws_api_gateway_deployment.deployment.stage_name
   domain_name = join("",aws_api_gateway_domain_name.domain.*.domain_name)
 }
 
 resource "aws_route53_record" "apigatewaypointer" {
-  count = length(var.zone_id) > 0 || var.delegated ? 1:0
+  count = local.useExistingDomain || var.delegated ? 1:0
   name    = join("",flatten(aws_api_gateway_domain_name.domain.*.domain_name))
   type    = "A"
   zone_id = local.route53_zone_id
