@@ -1,9 +1,11 @@
 locals {
+  useExistingDomain = length(var.zone_id)==0
+  useSubdomain = length(var.zone_id) >0
   policydomain = "mta-sts.${var.domain}"
   mta-sts-cname-record = "_mta-sts.${var.domain}"
   tls-rpt-cname-record = "_smtp._tls.${var.domain}"
-  mta-sts-record = "_mta-sts.mta-sts.${var.domain}"
-  tls-rpt-record = "_smtp._tls.mta-sts.${var.domain}"
+  mta-sts-record = local.useSubdomain ? "_mta-sts.mta-sts.${var.domain}" : "_mta-sts.${var.domain}"
+  tls-rpt-record = local.useSubdomain ? "_smtp._tls.mta-sts.${var.domain}" : "_smtp._tls.mta-sts.${var.domain}"
   mta-sts-record-value = "v=STSv1; id=${local.policyhash}"
   tls-rpt-record-value = "v=TLSRPTv1;rua=mailto:${var.reporting_email}"
   route53_zone_id = element(concat(data.aws_route53_zone.zone.*.id,aws_route53_zone.mta-sts-zone.*.id,data.aws_route53_zone.zone.*.id),0)
@@ -29,7 +31,7 @@ resource "aws_acm_certificate" "cert" {
 
 
 data "aws_route53_zone" "zone" {
-   count = length(var.zone_id) >0 ? 1:0
+   count = local.useSubdomain ? 1:0
   zone_id = var.zone_id
 }
 
@@ -157,7 +159,7 @@ resource "aws_api_gateway_deployment" "deployment" {
 }
 
 resource "aws_api_gateway_domain_name" "domain" {
-  count = length(var.zone_id) > 0 || var.delegated ? 1:0
+  count = local.useSubdomain || var.delegated ? 1:0
   domain_name              = local.policydomain
   regional_certificate_arn = join("",aws_acm_certificate_validation.cert.*.certificate_arn)
 
