@@ -1,6 +1,7 @@
 data "template_file" "instructions_template" {
   count  =  var.delegated || length(var.zone_id) >0 ? 0:1
   template = <<EOF
+$${domain}: FURTHER ACTION REQUIRED
 
 Create the following DNS entries in your $${domain} zone:
 
@@ -27,23 +28,11 @@ Once the delegation is complete set the variable delegated = true
 data "template_file" "details_template" {
   count  =  var.delegated || length(var.zone_id) >0 ? 1:0
   template = <<EOF
-
-DNS Records:
-$${mta-sts-delegation}
-$${tls-rpt-delegation}
-$${mta-sts-ns-delegation}
-
-MTA-STS Policy:
---
-$${policy}
---
-$${mta-sts}
-
-$${tls-rpt}
+$${domain}: COMPLETE ($${policy})
   EOF
   vars = {
     domain = var.domain
-    policy = trimspace(local.policy)
+    policy = join("",matchkeys(split("\n",local.policy),split("\n",local.policy), [ "mode: none","mode: testing","mode: enforce"]))
     mta-sts = "${local.mta-sts-cname-record} record value:\n${local.mta-sts-record-value}"
     tls-rpt = length(var.reporting_email) > 0 ? "${local.tls-rpt-cname-record} record value:\n${local.tls-rpt-record-value}" : ""
     mta-sts-delegation = "${local.mta-sts-cname-record} CNAME ${join("",data.dns_cname_record_set._mta-sts.*.cname)}"

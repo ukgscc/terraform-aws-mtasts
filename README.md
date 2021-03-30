@@ -4,31 +4,50 @@ This repo contains a module and example code for deploying an [MTS-STS](https://
 
 This consists of using AWS API Gateway with a Custom Domain to host the MTA-STS policy, with a TLS certificate provided by AWS ACM. It uses Route53 to configure the DNS portions of both MTA-STS and TLS-RPT.
 
-## How to use the example code
+If the Route53 domain is not natively hosting in the AWS account, a new Route53 zone is created called mta-sts.<domain>
 
-There are three examples for using the module in different ways.
+## How to use the code
 
-## Guided Automatic /examples/guided-automatic
+The code can be used in two ways, either as declarative terraform where you will need to write terraform code to suit the domains in your environment, calling the module once for each domain or subdomain, or using the code in the root of the repo which runs from a configuration file.
 
-This method creates a new subdomain in Route53 for each domain called mta-sts, this will need to be delegated from your existing DNS zone for that domain.
+
+## Automatic - in the root of the repo
+
+This method can either be passed an existing Route53 domain or creates a new subdomain in Route53 for each domain called mta-sts, this will need to be delegated from your existing DNS zone for that domain.
 CNAMES are used to point _mta-sts.domain and _smtp._tls.domain to records in this new mta-sts zone, these will also need to be created in your existing DNS.
 
-To reduce the number of manual steps in this mode, there is a two stage apply process, to avoid this please use the manual mode.
+To reduce the number of manual steps in this mode, there is a two stage apply process, to avoid this please use the manual mode or create the zone in Route53 first.
 
 1) Edit the configuration.tf file (or pass in a tfvars file)
-   Add your list of domains to the domains variable.
+   Add your list of domains to the domains variable, this is a list, any number can be added comma separated between the square brackets.
+  
+    {
+      domain = "example.gov.uk"
+      policy = "testing"
+      route53Id ="" // If this domain already exists in this account enter the zone ID here
+      mx=[] // If the list is empty the mx records will be queried from DNS
+      delegated = true // The first run will create the zone and output the nameservers, once delegated set this to true
+    }
+
+  domain: Your email receiving domain
+  policy: enforce, testing or none (start with testing)
+  route53Id: The AWS zone id of a domain already in the current AWS account
+  mx: A list of the mail servers to use in the policy, if empty DNS is used.
+  delegated: When run with a value of false the new zone is created, when true the configuration is completed requiring validation of ownership to issue the certificate.
+
+   
 
 2) run terraform init, then terraform apply in that directory
    
 3) Review the output, there are instructions for creating all of the DNS entries in your existing main DNS zone for each domain
 
-4) Once the records are created for each domain, add the domain to the delegated-domains variable in configuration.tf (or tfvars)
+4) Once the NS records are created for each domain to successfully delegate the new mta-sts subdomain, change the value of delegated to true.
    
-5) run terraform apply again, request and validate certificates and complete the process
+5) run terraform apply again, it will request certificates and complete the process
    
-6) Once you have checked all of your mail servers for TLS 1.2 and valid certificates, change the policy to enforce in cofnfiguration.tf (or tfvars)
+6) Once you have checked all of your mail servers for TLS 1.2 and valid certificates, and checked that the MX records in your policy are correct, change the policy to enforce in configuration.tf (or tfvars)
    
-## Manual mode - delegated from an existing DNS zone /examples/delegated-subdomain
+## Manual mode example - delegated from an existing DNS zone /examples/delegated-subdomain
 
 This method creates a new subdomain in Route53 for each domain called mta-sts, this will need to be delegated from your existing DNS zone for that domain.
 CNAMES are used to point _mta-sts.domain and _smtp._tls.domain to records in this new mta-sts zone, these will also need to be created in your existing DNS.
@@ -43,7 +62,7 @@ The end result is the same as the automatic mode but uses more declarative terra
 6) terraform init/plan/apply
 
 
-## Manual mode - main domain DNS zone is hosted in Route53 /examples/domain-in-route53
+## Manual mode example - main domain DNS zone is hosted in Route53 /examples/domain-in-route53
 
 This option is the simplest and does rely on delegation or CNAMEs, however it does require that the main DNS zone for that domain is already hosted in Route53 and the account used has permission to modify that zone.
 

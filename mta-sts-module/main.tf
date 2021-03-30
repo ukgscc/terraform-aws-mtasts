@@ -7,7 +7,7 @@ locals {
   mta-sts-record-value = "v=STSv1; id=${local.policyhash}"
   tls-rpt-record-value = "v=TLSRPTv1;rua=mailto:${var.reporting_email}"
   route53_zone_id = element(concat(data.aws_route53_zone.zone.*.id,aws_route53_zone.mta-sts-zone.*.id,data.aws_route53_zone.zone.*.id),0)
-
+  mxlist = coalescelist(var.mx,flatten(data.dns_mx_record_set.mx[*].mx[*].exchange))
   policy =  <<EOF
 version: STSv1
 mode: ${var.mode}
@@ -15,7 +15,6 @@ ${join("\n",local.formattedmxlist)}
 max_age: ${var.max_age}
 EOF
   policyhash   = md5(format("%s%s%s", join("", var.mx), var.mode, var.max_age))
-  mxlist = (length(var.mx) > 0 ? var.mx : data.dns_mx_record_set.mx.mx.*.exchange)
   formattedmxlist = [
   for mx in local.mxlist: 
   "mx: ${trimsuffix(mx,".")}"
@@ -120,6 +119,7 @@ resource "aws_api_gateway_method_response" "twohundred" {
 }
 
 data "dns_mx_record_set" "mx" {
+  count = length(var.mx) == 0 ? 1: 0
   domain = var.domain
 }
 

@@ -19,12 +19,21 @@ variable "domains" {
     policy = string
     route53Id = string
     delegated = bool
+    mx = list(string)
   }))
   default = [
     {
       domain = "example.gov.uk"
       policy = "testing"
       route53Id ="" // If this domain already exists in this account enter the zone ID here
+      mx=[] // If the list is empty the mx records will be queried from DNS
+      delegated = false // The first run will create the zone and output the nameservers, once delegated set this to true
+    },
+    {
+      domain = "subdomain1.example.gov.uk"
+      policy = "testing"
+      route53Id ="" // If this domain already exists in this account enter the zone ID here
+      mx=[] // If the list is empty the mx records will be queried from DNS
       delegated = false // The first run will create the zone and output the nameservers, once delegated set this to true
     }
   ]
