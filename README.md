@@ -1,13 +1,13 @@
-# MTA-STS/TLS-RPT AWS Module
+# Deploying MTA-STS and TLS-RPT using AWS
 
 This repo contains a module and example code for deploying an [MTS-STS](https://tools.ietf.org/html/rfc8461) and [TLS-RPT](https://tools.ietf.org/html/rfc8460) policy for a domin in AWS using [Terraform](https://www.terraform.io/).
 
 This consists of using:
 - an AWS API Gateway Endpoint with a custom domain to host the MTA-STS policy
 - a TLS certificate provided by AWS ACM
-- AWS Route53 to configure the DNS resource records for MTA-STS and TLS-RPT
+- AWS Route 53 to configure the DNS resource records for MTA-STS and TLS-RPT
 
-If the Route53 domain is not natively hosted in the AWS account, a new Route53 zone is created called mta-sts.
+If the Route 53 domain is not natively hosted in the AWS account (see Option 2 below), a new Route 53 zone is created called mta-sts.
 
 ## Prerequisites
 In order to complete this activity you will need:
@@ -20,10 +20,12 @@ In order to complete this activity you will need:
 
 ## How to use the code
 
-The code can be used in several ways depending on where your domains are hosted and how much configuration you want to do:
+The code can be used in three ways depending on where your domains are hosted and how much configuration you want to do:
 
 Option 1 - Basic - with domains hosted in Route 53
+
 Option 2 - Basic - with domains hosted with another DNS Provider
+
 Option 3 - Advanced - so you can integrate into your other Terraform configurations
 
 
@@ -36,13 +38,16 @@ Using this method you will need to:
 
 This will:
 - create the required DNS resource records for MTA-STS and TLS-RPT
-- publish an MTA-STS policy hosted in AWS API Gateway Endpoint
+- publish an MTA-STS policy hosted on an AWS API Gateway Endpoint
 - generate and host a valid TLS certificate for the MTA-STS policy
 
 1. [Install the AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2.html) if you don't already have it.
+
 2. Run `AWS configure` to add your AWS credentials and store them in a .aws folder in your home directory.
-3. Close [this repository](https://github.com/ukgscc/terraform-aws-mtasts) locally if you have not already done so
-4. Edit the configuration.tf file in the terraform-aws-mtasts-master directory. Add your list of domains to the domains variable. To add more than one domain copy the section between the square brackets and repeat for each domain, with a comma between each one.
+
+3. Clone [this repository](https://github.com/ukgscc/terraform-aws-mtasts) locally if you have not already done so
+
+4. Edit the `configuration.tf` file in the terraform-aws-mtasts-master directory. Add your list of domains to the domains variable. To add more than one domain copy the section between the square brackets and repeat for each domain, with a comma between each one.
   ```
 [
     {
@@ -54,7 +59,7 @@ This will:
     }
 ]
 ```
->The fields mean:
+>The fields above are:
 >- domain: your email receiving domain
 >- policy: `enforce` , `testing` or `none` (start with `testing`)
 >- route53Id: The Route 53 Hosted zone ID if the domain is already in the current AWS account
@@ -64,7 +69,9 @@ This will:
 >Specifying MX is optional, if they are retrieved from DNS you MUST check your policy to ensure the correct values were populated.
 >
 >If a negative DNS result is cached due to delays updating the delegated zone then you could try clearing the local dns cache e.g. using ipconfig/flushdns on Windows, wait a while, or set dns-delegation-checks to false to disable these checks. 
+
 5. Run `terraform init` in the root directory of the repository.
+
 6. Run `terraform apply`, check the proposed changes are correct, then type `yes` to confirm. This will:
 	- create the DNS resource records needed for MTA-STS and TLS-RPT
 	- create, validate and apply a TLS certificate for the published MTA-STS policy
@@ -79,6 +86,7 @@ This will:
 7. Once the domain is successfully configured edit the configuration.tf file. For each domain that is now correctly configured change the value of `delegated = true`
    
 8. The default configuration uses `mode = "testing"` . This has no impact on email security but allows you to test the configuration process. Once in place you should update to `mode = "enforce"` as soon as possible.  Check you have TLSv1.2 or better, valid certificates, and correct MX records for your email servers, then update the policy.
+
 9. Edit the edit the configuration.tf file again, changing the policy to `mode = "enforce"`.
 
 
