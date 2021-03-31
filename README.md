@@ -47,7 +47,7 @@ This will:
 
 3. Clone [this repository](https://github.com/ukgscc/terraform-aws-mtasts) locally if you have not already done so
 
-4. Edit the `configuration.tf` file in the terraform-aws-mtasts-master directory. Add your list of domains to the domains variable. To add more than one domain copy the section between the square brackets and repeat for each domain, with a comma between each one.
+4. Edit the file `terraform-aws-mtasts/configuration.tf`. Add the domains you want to configuration to the domains variable. To add more than one domain copy the section between the square brackets and repeat for each domain, with a comma between each one.
   ```
 [
     {
@@ -59,16 +59,14 @@ This will:
     }
 ]
 ```
->The fields above are:
+>The fields used are:
 >- domain: your email receiving domain
->- policy: `enforce` , `testing` or `none` (start with `testing`)
->- route53Id: The Route 53 Hosted zone ID if the domain is already in the current AWS account
->- mx: A list of the mail servers to use in the policy. If you leave this empty the current records in your DNS will be used.
->- delegated: `true` or `false`. When run with a value of false the new zone is created, when true the configuration is completed requiring validation of ownership to issue the certificate. This is ignored if the Route 53 Hosted zone ID is specified.
+>- policy: `enforce` , `testing` or `none` (start with `testing` but move quickly to `enforce`)
+>- route53Id: the Route 53 Hosted zone ID
+>- mx: the mail servers to use in the policy. If you leave this empty the current records in your DNS will be used.
+>- delegated: `true` or `false`. When run with a value of false the new zone is created, when true the configuration is completed requiring validation of ownership to issue the certificate. This is ignored if the Route 53 Hosted zone ID is specified above.
 >
->Specifying MX is optional, if they are retrieved from DNS you MUST check your policy to ensure the correct values were populated.
->
->If a negative DNS result is cached due to delays updating the delegated zone then you could try clearing the local dns cache e.g. using ipconfig/flushdns on Windows, wait a while, or set dns-delegation-checks to false to disable these checks. 
+>If a negative DNS result is cached due to delays updating the delegated zone try clearing the local DNS cache (for example by using ipconfig/flushdns on Windows) wait a while, or set dns-delegation-checks to false to disable these checks. 
 
 5. Run `terraform init` in the root directory of the repository.
 
@@ -77,11 +75,18 @@ This will:
 	- create, validate and apply a TLS certificate for the published MTA-STS policy
 	- create an API Endpoint that hosts the MTA-STS policy
 
->You can now test the domain is configured correctly through the NCSC Mail Check service if you are a public sector organisation, or through another online checker service. You can also go to:
+>You can now test the domain is configured correctly through the [NCSC Mail Check service](https://www.mailcheck.service.ncsc.gov.uk) if you are a public sector organisation, or through another online checker service. You can also go to:
 >
 >https://mta-sts.<your_domain>.gov.uk/.well-known/mta-sts.txt
 >
 >to see the policy there.
+>
+>You can also test the API endpoint in AWS. Got to the API Gateway service and yo should see your domains listed as API endpoints. Click on one then click on GET: 
+>![image](https://user-images.githubusercontent.com/77065592/113132949-0aeadf80-9217-11eb-93af-c8a88de5bb9c.png)
+>then on TEST:
+>![image](https://user-images.githubusercontent.com/77065592/113133017-1e964600-9217-11eb-8d81-4f6ab2d10a82.png)
+>the on Test again:
+>![image](https://user-images.githubusercontent.com/77065592/113133060-2ce46200-9217-11eb-9078-95f05db3c563.png)
 
 7. Once the domain is successfully configured edit the `configuration.tf` file. For each domain that is now correctly configured change the value of `delegated = true`
    
