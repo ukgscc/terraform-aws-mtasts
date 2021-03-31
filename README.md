@@ -83,11 +83,11 @@ This will:
 >
 >to see the policy there.
 
-7. Once the domain is successfully configured edit the configuration.tf file. For each domain that is now correctly configured change the value of `delegated = true`
+7. Once the domain is successfully configured edit the `configuration.tf` file. For each domain that is now correctly configured change the value of `delegated = true`
    
 8. The default configuration uses `mode = "testing"` . This has no impact on email security but allows you to test the configuration process. Once in place you should update to `mode = "enforce"` as soon as possible.  Check you have TLSv1.2 or better, valid certificates, and correct MX records for your email servers, then update the policy.
 
-9. Edit the edit the configuration.tf file again, changing the policy to `mode = "enforce"`.
+9. Edit the edit the `configuration.tf` file again, changing the policy to `mode = "enforce"`.
 
 
 ## Option 2 - Basic - with domains hosted with another DNS Provider
